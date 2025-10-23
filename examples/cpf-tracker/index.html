@@ -698,9 +698,16 @@
             
             <p style="margin-bottom: 1rem; color: #666;">Add recommended and selected measures with estimated costs and incentives.</p>
             
-            <div class="measure-list" id="measureList"></div>
+            <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                <select id="measureLibrary" style="flex: 1; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px;">
+                    <option value="">Select from measure library...</option>
+                </select>
+                <button class="btn btn-primary" onclick="addMeasureFromLibrary()" style="white-space: nowrap;">+ Add Selected</button>
+                <button class="btn btn-secondary" onclick="importMeasures()" title="Import JSON">📥 Import</button>
+                <button class="btn btn-secondary" onclick="exportMeasureLibrary()" title="Export Library">📤 Export</button>
+            </div>
             
-            <button class="add-measure-btn" onclick="addMeasure()">+ Add Measure</button>
+            <div class="measure-list" id="measureList"></div>
             
             <div class="cost-summary">
                 <div class="cost-row">
@@ -805,6 +812,29 @@
     </div>
     
     <script>
+        // Measure Library - Pre-defined measures with typical costs and incentives
+        const measureLibrary = [
+            { name: 'Attic Insulation (R-38)', category: 'Insulation', typicalCost: 2500, typicalIncentive: 500 },
+            { name: 'Wall Insulation', category: 'Insulation', typicalCost: 3500, typicalIncentive: 700 },
+            { name: 'Floor Insulation', category: 'Insulation', typicalCost: 2000, typicalIncentive: 400 },
+            { name: 'Air Sealing & Weatherization', category: 'Weatherization', typicalCost: 1500, typicalIncentive: 300 },
+            { name: 'Duct Sealing & Insulation', category: 'Weatherization', typicalCost: 1200, typicalIncentive: 250 },
+            { name: 'Heat Pump (Mini-Split)', category: 'HVAC', typicalCost: 8000, typicalIncentive: 2000 },
+            { name: 'Heat Pump (Ducted)', category: 'HVAC', typicalCost: 12000, typicalIncentive: 3000 },
+            { name: 'Heat Pump Water Heater', category: 'Water Heating', typicalCost: 3500, typicalIncentive: 1000 },
+            { name: 'Solar Water Heater', category: 'Water Heating', typicalCost: 5500, typicalIncentive: 1500 },
+            { name: 'Windows - Double Pane (per window)', category: 'Windows', typicalCost: 650, typicalIncentive: 100 },
+            { name: 'Windows - Triple Pane (per window)', category: 'Windows', typicalCost: 900, typicalIncentive: 150 },
+            { name: 'Solar PV System (5kW)', category: 'Solar', typicalCost: 15000, typicalIncentive: 4500 },
+            { name: 'Solar PV System (10kW)', category: 'Solar', typicalCost: 25000, typicalIncentive: 7500 },
+            { name: 'Electric Panel Upgrade (200A)', category: 'Electrical', typicalCost: 2500, typicalIncentive: 500 },
+            { name: 'LED Lighting Upgrade (whole home)', category: 'Lighting', typicalCost: 800, typicalIncentive: 200 },
+            { name: 'Smart Thermostat', category: 'Controls', typicalCost: 250, typicalIncentive: 75 },
+            { name: 'Refrigerator (ENERGY STAR)', category: 'Appliances', typicalCost: 1200, typicalIncentive: 200 },
+            { name: 'Clothes Washer (ENERGY STAR)', category: 'Appliances', typicalCost: 800, typicalIncentive: 150 },
+            { name: 'Clothes Dryer - Heat Pump', category: 'Appliances', typicalCost: 1400, typicalIncentive: 300 }
+        ];
+        
         // Initialize core modules
         const ledger = new Ledger({ storageKey: 'cpf_ledger_financial' });
         const rbac = new RBAC();
@@ -984,35 +1014,36 @@
         function getQuickActions(project) {
             const actions = {
                 'intake': [
-                    { label: '→ HEA', status: 'hea' }
+                    { label: '✅ Complete Intake', status: 'hea', description: 'Customer qualified, move to HEA' }
                 ],
                 'hea': [
-                    { label: '📐 Scoping', status: 'scoping' }
+                    { label: '✅ Complete HEA', status: 'scoping', description: 'Assessment done, start scoping' }
                 ],
                 'scoping': [
-                    { label: '📋 Measures', action: 'openScoping', primary: true },
-                    { label: '→ Bidding', status: 'bidding' }
+                    { label: '📋 Manage Measures', action: 'openScoping', primary: true },
+                    { label: '✅ Complete Scoping', status: 'bidding', description: 'Measures finalized, request bids' }
                 ],
                 'bidding': [
-                    { label: '💰 Bids', action: 'openBidding', primary: true },
-                    { label: '✅ Approve', status: 'approved' }
+                    { label: '💰 Manage Bids', action: 'openBidding', primary: true },
+                    { label: '✅ Approve Project', status: 'approved', description: 'Bid selected, approve for work' }
                 ],
                 'approved': [
-                    { label: '🔨 Start', status: 'implementation' }
+                    { label: '🔨 Start Implementation', status: 'implementation', description: 'Begin work on project' }
                 ],
                 'implementation': [
-                    { label: '💵 Actuals', action: 'openImplementation', primary: true },
-                    { label: '✓ Complete', status: 'completed' }
-                ]
+                    { label: '💵 Record Actuals', action: 'openImplementation', primary: true },
+                    { label: '✅ Mark Complete', status: 'completed', description: 'Work finished, close project' }
+                ],
+                'completed': []
             };
             
             const stageActions = actions[project.status] || [];
             
             return stageActions.map(action => {
                 if (action.action) {
-                    return `<button class="quick-btn ${action.primary ? 'primary' : ''}" onclick="${action.action}('${project.id}')">${action.label}</button>`;
+                    return `<button class="quick-btn ${action.primary ? 'primary' : ''}" onclick="${action.action}('${project.id}')" title="${action.description || ''}">${action.label}</button>`;
                 } else {
-                    return `<button class="quick-btn" onclick="quickStatusChange('${project.id}', '${action.status}')">${action.label}</button>`;
+                    return `<button class="quick-btn" onclick="quickStatusChange('${project.id}', '${action.status}')" title="${action.description || ''}">${action.label}</button>`;
                 }
             }).join('');
         }
@@ -1047,8 +1078,86 @@
             currentEditingProject = projects.find(p => p.id === projectId);
             if (!currentEditingProject) return;
             
+            populateMeasureLibraryDropdown();
             renderMeasureList();
             document.getElementById('scopingModal').classList.add('active');
+        }
+        
+        function populateMeasureLibraryDropdown() {
+            const dropdown = document.getElementById('measureLibrary');
+            dropdown.innerHTML = '<option value="">Select from measure library...</option>';
+            
+            const categories = [...new Set(measureLibrary.map(m => m.category))];
+            categories.forEach(category => {
+                const optgroup = document.createElement('optgroup');
+                optgroup.label = category;
+                measureLibrary.filter(m => m.category === category).forEach(measure => {
+                    const option = document.createElement('option');
+                    option.value = JSON.stringify(measure);
+                    option.textContent = `${measure.name} ($${measure.typicalCost.toLocaleString()} / $${measure.typicalIncentive.toLocaleString()} incentive)`;
+                    optgroup.appendChild(option);
+                });
+                dropdown.appendChild(optgroup);
+            });
+        }
+        
+        function addMeasureFromLibrary() {
+            const dropdown = document.getElementById('measureLibrary');
+            if (!dropdown.value) return;
+            
+            const measure = JSON.parse(dropdown.value);
+            currentEditingProject.measures.push({
+                name: measure.name,
+                cost: measure.typicalCost,
+                incentive: measure.typicalIncentive,
+                selected: false
+            });
+            
+            dropdown.value = '';
+            renderMeasureList();
+        }
+        
+        function importMeasures() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = e => {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = event => {
+                    try {
+                        const imported = JSON.parse(event.target.result);
+                        if (Array.isArray(imported)) {
+                            imported.forEach(m => {
+                                if (m.name && (m.cost || m.typicalCost)) {
+                                    currentEditingProject.measures.push({
+                                        name: m.name,
+                                        cost: m.cost || m.typicalCost || 0,
+                                        incentive: m.incentive || m.typicalIncentive || 0,
+                                        selected: m.selected || false
+                                    });
+                                }
+                            });
+                            renderMeasureList();
+                            alert(`Imported ${imported.length} measures successfully!`);
+                        }
+                    } catch (err) {
+                        alert('Error importing JSON: ' + err.message);
+                    }
+                };
+                reader.readAsText(file);
+            };
+            input.click();
+        }
+        
+        function exportMeasureLibrary() {
+            const data = JSON.stringify(measureLibrary, null, 2);
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'measure-library.json';
+            a.click();
         }
         
         function renderMeasureList() {
