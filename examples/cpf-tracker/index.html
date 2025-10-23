@@ -771,6 +771,47 @@
         </div>
     </div>
     
+    <!-- Funding Sources Modal -->
+    <div class="modal" id="fundingModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>💰 Funding Sources (Braided/Stacked)</h2>
+                <button class="modal-close" onclick="closeModal('fundingModal')">×</button>
+            </div>
+            
+            <p style="margin-bottom: 1rem; color: #666;">Layer multiple funding sources to cover project costs. Total incentives are automatically calculated.</p>
+            
+            <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                <select id="fundingSourceLibrary" style="flex: 1; padding: 0.75rem; border: 1px solid var(--border); border-radius: 6px;">
+                    <option value="">Select funding source...</option>
+                </select>
+                <button class="btn btn-primary" onclick="addFundingSourceFromLibrary()" style="white-space: nowrap;">+ Add Source</button>
+            </div>
+            
+            <div class="measure-list" id="fundingSourceList"></div>
+            
+            <div class="cost-summary">
+                <div class="cost-row">
+                    <span>Project Cost (Selected Measures):</span>
+                    <span class="cost-amount" id="modal-funding-cost">$0</span>
+                </div>
+                <div class="cost-row">
+                    <span>Total Incentives (All Sources):</span>
+                    <span class="cost-amount" style="color: var(--success);" id="modal-funding-incentives">$0</span>
+                </div>
+                <div class="cost-row total">
+                    <span>Net Cost to Customer:</span>
+                    <span class="cost-amount" style="color: var(--danger);" id="modal-funding-net">$0</span>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 1rem;">
+                <button type="button" class="btn btn-secondary" onclick="closeModal('fundingModal')">Close</button>
+                <button type="button" class="btn btn-primary" onclick="saveFundingSources()">💾 Save Funding Stack</button>
+            </div>
+        </div>
+    </div>
+    
     <!-- Implementation/Actual Costs Modal -->
     <div class="modal" id="implementationModal">
         <div class="modal-content">
@@ -812,6 +853,30 @@
     </div>
     
     <script>
+        // Funding Sources Library - Pre-defined incentive sources
+        const fundingSourcesLibrary = [
+            { name: 'Energy Trust of Oregon', category: 'Utility', type: 'Rebate', maxAmount: null, description: 'Electric utility rebates' },
+            { name: 'NW Natural Rebates', category: 'Utility', type: 'Rebate', maxAmount: null, description: 'Gas utility rebates' },
+            { name: 'Federal Tax Credit (25C)', category: 'Tax Credit', type: 'Tax Credit', maxAmount: 1200, description: 'Home efficiency improvements' },
+            { name: 'Federal Tax Credit (25D)', category: 'Tax Credit', type: 'Tax Credit', maxAmount: null, description: '30% solar/battery credit' },
+            { name: 'Oregon Residential Energy Tax Credit', category: 'Tax Credit', type: 'Tax Credit', maxAmount: 1500, description: 'State tax credit' },
+            { name: 'Weatherization Assistance Program (WAP)', category: 'Federal Program', type: 'Grant', maxAmount: 8000, description: 'DOE weatherization' },
+            { name: 'LIHEAP', category: 'Federal Program', type: 'Grant', maxAmount: 5000, description: 'Low-income heating assistance' },
+            { name: 'Community Action Agency Funding', category: 'Community', type: 'Grant', maxAmount: null, description: 'Local CAA programs' },
+            { name: 'Habitat for Humanity', category: 'Nonprofit', type: 'Grant', maxAmount: null, description: 'Home repair assistance' },
+            { name: 'Internal CPF Funding', category: 'Internal', type: 'Grant', maxAmount: null, description: 'Organization gap funding' },
+            { name: 'Green Bank Financing', category: 'Financing', type: 'Loan', maxAmount: null, description: 'Clean energy loans' },
+            { name: 'PACE Financing', category: 'Financing', type: 'Loan', maxAmount: null, description: 'Property-assessed clean energy' },
+            { name: 'Inflation Reduction Act - HOMES', category: 'Federal Program', type: 'Rebate', maxAmount: 8000, description: 'Whole-home performance rebates' },
+            { name: 'Inflation Reduction Act - HEAR', category: 'Federal Program', type: 'Rebate', maxAmount: 14000, description: 'Electrification rebates' },
+            { name: 'State Affordable Housing Credits', category: 'State Program', type: 'Grant', maxAmount: null, description: 'Housing assistance' },
+            { name: 'Tribal Energy Programs', category: 'Tribal', type: 'Grant', maxAmount: null, description: 'Tribal member assistance' },
+            { name: 'Veterans Affairs Benefits', category: 'Federal Program', type: 'Grant', maxAmount: null, description: 'VA home improvement' },
+            { name: 'HUD Home Improvement', category: 'Federal Program', type: 'Grant', maxAmount: null, description: 'HUD rehabilitation programs' },
+            { name: 'Local Government Grants', category: 'Municipal', type: 'Grant', maxAmount: null, description: 'City/county programs' },
+            { name: 'Foundation Grants', category: 'Nonprofit', type: 'Grant', maxAmount: null, description: 'Private foundation funding' }
+        ];
+        
         // Measure Library - Pre-defined measures with typical costs and incentives
         const measureLibrary = [
             { name: 'Attic Insulation (R-38)', category: 'Insulation', typicalCost: 2500, typicalIncentive: 500 },
@@ -883,6 +948,7 @@
                     form320: false,
                     measures: [],
                     bids: [],
+                    fundingSources: [],
                     financials: {
                         recommended: 0,
                         selected: 0,
@@ -1021,10 +1087,12 @@
                 ],
                 'scoping': [
                     { label: '📋 Manage Measures', action: 'openScoping', primary: true },
+                    { label: '💰 Funding Sources', action: 'openFunding' },
                     { label: '✅ Complete Scoping', status: 'bidding', description: 'Measures finalized, request bids' }
                 ],
                 'bidding': [
                     { label: '💰 Manage Bids', action: 'openBidding', primary: true },
+                    { label: '💰 Funding Sources', action: 'openFunding' },
                     { label: '✅ Approve Project', status: 'approved', description: 'Bid selected, approve for work' }
                 ],
                 'approved': [
@@ -1245,7 +1313,10 @@
         function saveMeasures() {
             const recommended = currentEditingProject.measures.reduce((sum, m) => sum + m.cost, 0);
             const selected = currentEditingProject.measures.filter(m => m.selected).reduce((sum, m) => sum + m.cost, 0);
-            const incentives = currentEditingProject.measures.filter(m => m.selected).reduce((sum, m) => sum + m.incentive, 0);
+            
+            // Calculate total incentives from funding sources if they exist
+            const fundingIncentives = (currentEditingProject.fundingSources || []).reduce((sum, f) => sum + (f.amount || 0), 0);
+            const incentives = fundingIncentives || currentEditingProject.measures.filter(m => m.selected).reduce((sum, m) => sum + m.incentive, 0);
             
             currentEditingProject.financials.recommended = recommended;
             currentEditingProject.financials.selected = selected;
@@ -1261,6 +1332,168 @@
             
             saveProjects();
             closeModal('scopingModal');
+            renderProjects();
+            updatePortfolioDashboard();
+        }
+        
+        function openFunding(projectId) {
+            currentEditingProject = projects.find(p => p.id === projectId);
+            if (!currentEditingProject) return;
+            
+            if (!currentEditingProject.fundingSources) currentEditingProject.fundingSources = [];
+            
+            populateFundingSourceDropdown();
+            renderFundingSourceList();
+            document.getElementById('fundingModal').classList.add('active');
+        }
+        
+        function populateFundingSourceDropdown() {
+            const dropdown = document.getElementById('fundingSourceLibrary');
+            dropdown.innerHTML = '<option value="">Select funding source...</option>';
+            
+            const categories = [...new Set(fundingSourcesLibrary.map(f => f.category))];
+            categories.forEach(category => {
+                const optgroup = document.createElement('optgroup');
+                optgroup.label = category;
+                fundingSourcesLibrary.filter(f => f.category === category).forEach(source => {
+                    const option = document.createElement('option');
+                    option.value = JSON.stringify(source);
+                    const maxText = source.maxAmount ? ` (max $${source.maxAmount.toLocaleString()})` : '';
+                    option.textContent = `${source.name} - ${source.type}${maxText}`;
+                    optgroup.appendChild(option);
+                });
+                dropdown.appendChild(optgroup);
+            });
+        }
+        
+        function addFundingSourceFromLibrary() {
+            const dropdown = document.getElementById('fundingSourceLibrary');
+            if (!dropdown.value) return;
+            
+            const source = JSON.parse(dropdown.value);
+            currentEditingProject.fundingSources.push({
+                name: source.name,
+                category: source.category,
+                type: source.type,
+                amount: 0,
+                maxAmount: source.maxAmount,
+                description: source.description,
+                status: 'pending'
+            });
+            
+            dropdown.value = '';
+            renderFundingSourceList();
+        }
+        
+        function renderFundingSourceList() {
+            const container = document.getElementById('fundingSourceList');
+            
+            if (currentEditingProject.fundingSources.length === 0) {
+                container.innerHTML = '<p style="text-align: center; color: #666; padding: 2rem;">No funding sources added yet</p>';
+            } else {
+                container.innerHTML = currentEditingProject.fundingSources.map((f, idx) => `
+                    <div class="measure-item" style="grid-template-columns: 2fr 1fr auto auto;">
+                        <div>
+                            <div class="measure-name">${f.name}</div>
+                            <div style="font-size: 0.75rem; color: #666; margin-top: 0.25rem;">
+                                <span style="background: #e0e7ff; padding: 0.125rem 0.5rem; border-radius: 4px; font-weight: 600;">${f.type}</span>
+                                ${f.maxAmount ? '<span style="margin-left: 0.5rem;">Max: $' + f.maxAmount.toLocaleString() + '</span>' : ''}
+                            </div>
+                            <select style="margin-top: 0.5rem; padding: 0.25rem 0.5rem; font-size: 0.75rem; border: 1px solid var(--border); border-radius: 4px;" onchange="updateFundingStatus(${idx}, this.value)">
+                                <option value="pending" ${f.status === 'pending' ? 'selected' : ''}>⏳ Pending</option>
+                                <option value="applied" ${f.status === 'applied' ? 'selected' : ''}>📝 Applied</option>
+                                <option value="approved" ${f.status === 'approved' ? 'selected' : ''}>✅ Approved</option>
+                                <option value="disbursed" ${f.status === 'disbursed' ? 'selected' : ''}>💵 Disbursed</option>
+                                <option value="denied" ${f.status === 'denied' ? 'selected' : ''}>❌ Denied</option>
+                            </select>
+                        </div>
+                        <div>
+                            <div style="font-size: 0.7rem; color: #666; margin-bottom: 0.25rem;">Amount</div>
+                            <input type="number" value="${f.amount}" step="0.01" 
+                                   placeholder="${f.maxAmount ? 'Max: $' + f.maxAmount.toLocaleString() : '0.00'}"
+                                   style="width: 100%; padding: 0.5rem; border: 1px solid var(--border); border-radius: 4px; text-align: right;"
+                                   onchange="updateFundingAmount(${idx}, this.value)"
+                                   ${f.maxAmount ? 'max="' + f.maxAmount + '"' : ''}>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 0.7rem; color: #666;">Status</div>
+                            <div style="margin-top: 0.25rem; font-size: 0.8rem; font-weight: 600;">
+                                ${getStatusIcon(f.status)}
+                            </div>
+                        </div>
+                        <button class="remove-btn" onclick="removeFundingSource(${idx})">✕</button>
+                    </div>
+                `).join('');
+            }
+            
+            updateFundingModalSummary();
+        }
+        
+        function getStatusIcon(status) {
+            const icons = {
+                'pending': '⏳',
+                'applied': '📋',
+                'approved': '✅',
+                'disbursed': '💵',
+                'denied': '❌'
+            };
+            return icons[status] || '⏳';
+        }
+        
+        function updateFundingAmount(idx, value) {
+            const amount = parseFloat(value) || 0;
+            const maxAmount = currentEditingProject.fundingSources[idx].maxAmount;
+            
+            if (maxAmount && amount > maxAmount) {
+                alert(`Amount exceeds maximum of $${maxAmount.toLocaleString()} for this funding source.`);
+                currentEditingProject.fundingSources[idx].amount = maxAmount;
+            } else {
+                currentEditingProject.fundingSources[idx].amount = amount;
+            }
+            
+            renderFundingSourceList();
+        }
+        
+        function updateFundingStatus(idx, status) {
+            currentEditingProject.fundingSources[idx].status = status;
+            renderFundingSourceList();
+        }
+        
+        function removeFundingSource(idx) {
+            currentEditingProject.fundingSources.splice(idx, 1);
+            renderFundingSourceList();
+        }
+        
+        function updateFundingModalSummary() {
+            const selectedMeasuresCost = currentEditingProject.measures.filter(m => m.selected).reduce((sum, m) => sum + m.cost, 0);
+            const totalIncentives = currentEditingProject.fundingSources.reduce((sum, f) => sum + (f.amount || 0), 0);
+            const netCost = selectedMeasuresCost - totalIncentives;
+            
+            document.getElementById('modal-funding-cost').textContent = `$${selectedMeasuresCost.toLocaleString()}`;
+            document.getElementById('modal-funding-incentives').textContent = `$${totalIncentives.toLocaleString()}`;
+            document.getElementById('modal-funding-net').textContent = `$${netCost.toLocaleString()}`;
+        }
+        
+        function saveFundingSources() {
+            const totalIncentives = currentEditingProject.fundingSources.reduce((sum, f) => sum + (f.amount || 0), 0);
+            const selectedCost = currentEditingProject.financials.selected || currentEditingProject.measures.filter(m => m.selected).reduce((sum, m) => sum + m.cost, 0);
+            
+            currentEditingProject.financials.incentivized = totalIncentives;
+            currentEditingProject.financials.net = selectedCost - totalIncentives;
+            
+            ledger.record({
+                action: 'FUNDING_SOURCES_UPDATED',
+                projectId: currentEditingProject.id,
+                userId: currentUser.id,
+                details: { 
+                    sourceCount: currentEditingProject.fundingSources.length, 
+                    totalIncentives,
+                    sources: currentEditingProject.fundingSources.map(f => ({ name: f.name, amount: f.amount, status: f.status }))
+                }
+            });
+            
+            saveProjects();
+            closeModal('fundingModal');
             renderProjects();
             updatePortfolioDashboard();
         }
