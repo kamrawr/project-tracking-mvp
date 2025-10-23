@@ -37,10 +37,16 @@ project-tracking-system/
 
 ## 🚀 Quick Start
 
-### Run CPF Example
+### 🌐 Live Demo
+**[https://kamrawr.github.io/project-tracking-mvp/](https://kamrawr.github.io/project-tracking-mvp/)**
+
+Try the CPF tracker example live, or:
+
+### Run Locally
 ```bash
-cd examples/cpf-tracker
-open index.html
+git clone https://github.com/kamrawr/project-tracking-mvp.git
+cd project-tracking-mvp
+open examples/cpf-tracker/index.html
 ```
 
 ### Use Core Modules

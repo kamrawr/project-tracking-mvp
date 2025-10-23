@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Tracking System - Enterprise Multi-Party Approval & Audit Framework</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #1e293b;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: white;
+            padding: 2rem;
+        }
+
+        .hero-content {
+            max-width: 900px;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            font-weight: 800;
+        }
+
+        .subtitle {
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            opacity: 0.95;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .feature {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .feature h3 {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin: 2rem 0;
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: inline-block;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+        }
+
+        .btn-primary {
+            background: white;
+            color: #667eea;
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 2px solid white;
+        }
+
+        .section {
+            background: white;
+            padding: 4rem 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+
+        .card {
+            background: #f8fafc;
+            padding: 2rem;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .card h3 {
+            color: #667eea;
+            margin-bottom: 1rem;
+        }
+
+        code {
+            background: #1e293b;
+            color: #10b981;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Courier New', monospace;
+        }
+
+        pre {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 1.5rem;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+        }
+
+        footer {
+            background: #1e293b;
+            color: white;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        footer a {
+            color: #10b981;
+            text-decoration: none;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: #10b981;
+            color: white;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin: 0.25rem;
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 2rem; }
+            .subtitle { font-size: 1.2rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="hero">
+        <div class="hero-content">
+            <h1>🔐 Project Tracking System</h1>
+            <p class="subtitle">Enterprise-grade framework with multi-party approvals, immutable audit trails, and role-based access control</p>
+            
+            <div class="features">
+                <div class="feature">
+                    <h3>🔍 Audit Trail</h3>
+                    <p>Immutable ledger with cryptographic integrity</p>
+                </div>
+                <div class="feature">
+                    <h3>✅ Approvals</h3>
+                    <p>Multi-party milestone approvals</p>
+                </div>
+                <div class="feature">
+                    <h3>👥 RBAC</h3>
+                    <p>Granular role-based permissions</p>
+                </div>
+                <div class="feature">
+                    <h3>💰 Funding</h3>
+                    <p>Budget tracking & gap analysis</p>
+                </div>
+                <div class="feature">
+                    <h3>🎯 QA Gates</h3>
+                    <p>Quality checkpoints at each stage</p>
+                </div>
+                <div class="feature">
+                    <h3>🚀 Production Ready</h3>
+                    <p>Zero dependencies, works offline</p>
+                </div>
+            </div>
+
+            <div class="cta-buttons">
+                <a href="examples/cpf-tracker/index.html" class="btn btn-primary">🎮 Live Demo (CPF Tracker)</a>
+                <a href="https://github.com/kamrawr/project-tracking-mvp" class="btn btn-secondary">📚 View on GitHub</a>
+            </div>
+
+            <div style="margin-top: 2rem;">
+                <span class="badge">Multi-Party Approvals</span>
+                <span class="badge">Immutable Ledger</span>
+                <span class="badge">RBAC</span>
+                <span class="badge">Funding Tracking</span>
+                <span class="badge">QA Integration</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="container">
+            <h2 style="text-align: center; margin-bottom: 3rem; font-size: 2.5rem;">Core Modules</h2>
+            
+            <div class="grid-2">
+                <div class="card">
+                    <h3>📋 Ledger</h3>
+                    <p>Immutable audit trail with SHA-256 hashing. Every action logged with timestamp, user, and cryptographic integrity.</p>
+                    <pre><code>const ledger = new Ledger();
+ledger.record({
+  action: 'PROJECT_CREATED',
+  projectId: 'CPF-001',
+  userId: 'john@org.com'
+});
+ledger.verify(); // Check integrity</code></pre>
+                </div>
+
+                <div class="card">
+                    <h3>🔐 RBAC</h3>
+                    <p>Role-based access control with 7 predefined roles: PM, Finance, QA, Executive, Auditor, Contractor, Customer.</p>
+                    <pre><code>const rbac = new RBAC();
+rbac.defineRole('pm', {
+  view: '*',
+  approve: ['assessment', 'bids']
+});
+rbac.can('john', 'approve', 'payment');</code></pre>
+                </div>
+
+                <div class="card">
+                    <h3>✅ Approval Engine</h3>
+                    <p>Multi-party milestone approvals with configurable chains and threshold-based routing.</p>
+                    <pre><code>approvals.requestApproval({
+  projectId: 'CPF-001',
+  milestone: 'payment',
+  amount: 15000,
+  requiredApprovers: ['finance', 'exec']
+});</code></pre>
+                </div>
+
+                <div class="card">
+                    <h3>💰 Funding Tracker</h3>
+                    <p>Multi-source funding commitments with real-time gap analysis and disbursement tracking.</p>
+                    <pre><code>funding.addCommitment({
+  projectId: 'CPF-001',
+  source: 'Energy Trust',
+  amount: 10000
+});
+funding.getGap('CPF-001');</code></pre>
+                </div>
+
+                <div class="card">
+                    <h3>🎯 QA Gates</h3>
+                    <p>Quality checkpoints with pass/fail gates preventing progression without approval.</p>
+                    <pre><code>qa.create({
+  projectId: 'CPF-001',
+  stage: 'hea',
+  inspector: 'qa_tom'
+});
+qa.pass('CPF-001', 'hea');</code></pre>
+                </div>
+
+                <div class="card">
+                    <h3>📦 Export & Backup</h3>
+                    <p>Export audit trails to JSON/CSV. Verify integrity. Import/export configurations.</p>
+                    <pre><code>ledger.export(); // JSON
+ledger.exportCSV(); // CSV for Excel
+ledger.verify(); // Integrity check</code></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="section" style="background: #f8fafc;">
+        <div class="container">
+            <h2 style="text-align: center; margin-bottom: 2rem; font-size: 2.5rem;">CPF Tracker Example</h2>
+            <p style="text-align: center; max-width: 800px; margin: 0 auto 3rem; font-size: 1.2rem;">
+                A complete implementation of Community Partner Funding workflow demonstrating all core features in production.
+            </p>
+
+            <div class="grid-2">
+                <div>
+                    <h3 style="margin-bottom: 1rem;">Features</h3>
+                    <ul style="line-height: 2;">
+                        <li>✅ 8-stage workflow (Intake → HEA → Scoping → Bidding → Approval → Implementation → Completion)</li>
+                        <li>✅ Multi-party approvals for 300CPF and 320CPF forms</li>
+                        <li>✅ Decision points (Qualified Homeowner, Resources Check)</li>
+                        <li>✅ Funding source tracking (Energy Trust, Internal, External)</li>
+                        <li>✅ QA checkpoints at each stage</li>
+                        <li>✅ Complete audit trail for every action</li>
+                        <li>✅ Role-based permissions ready to configure</li>
+                        <li>✅ Real-time stats dashboard</li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h3 style="margin-bottom: 1rem;">Technology</h3>
+                    <ul style="line-height: 2;">
+                        <li>🚀 Pure JavaScript - No frameworks</li>
+                        <li>🔒 Client-side first - Works offline</li>
+                        <li>💾 localStorage persistence</li>
+                        <li>📱 Responsive design - Mobile friendly</li>
+                        <li>🎨 Clean UI with status-based colors</li>
+                        <li>🔐 Privacy-first - Data never leaves browser</li>
+                        <li>📊 Export to JSON/CSV for reporting</li>
+                        <li>⚡ Zero dependencies - Fast load</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-top: 3rem;">
+                <a href="examples/cpf-tracker/index.html" class="btn btn-primary" style="font-size: 1.3rem; padding: 1.2rem 3rem;">
+                    🎮 Launch CPF Tracker Demo
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <div class="container">
+            <h2 style="text-align: center; margin-bottom: 3rem; font-size: 2.5rem;">Quick Start</h2>
+            
+            <div style="max-width: 800px; margin: 0 auto;">
+                <h3>1. Clone the Repository</h3>
+                <pre><code>git clone https://github.com/kamrawr/project-tracking-mvp.git
+cd project-tracking-mvp</code></pre>
+
+                <h3>2. Run the CPF Example</h3>
+                <pre><code>open examples/cpf-tracker/index.html</code></pre>
+
+                <h3>3. Use Core Modules in Your Project</h3>
+                <pre><code>&lt;script src="core/ledger.js"&gt;&lt;/script&gt;
+&lt;script src="core/rbac.js"&gt;&lt;/script&gt;
+&lt;script src="core/approval-engine.js"&gt;&lt;/script&gt;
+
+&lt;script&gt;
+  const ledger = new Ledger();
+  const rbac = new RBAC();
+  const approvals = new ApprovalEngine();
+  // Start building!
+&lt;/script&gt;</code></pre>
+
+                <h3>Documentation</h3>
+                <ul style="line-height: 2; font-size: 1.1rem;">
+                    <li>📖 <a href="https://github.com/kamrawr/project-tracking-mvp/blob/main/README.md" style="color: #667eea; text-decoration: none;">README - System Overview</a></li>
+                    <li>🚀 <a href="https://github.com/kamrawr/project-tracking-mvp/blob/main/QUICKSTART.md" style="color: #667eea; text-decoration: none;">Quick Start Guide</a></li>
+                    <li>📋 <a href="https://github.com/kamrawr/project-tracking-mvp/blob/main/examples/cpf-tracker/README.md" style="color: #667eea; text-decoration: none;">CPF Tracker Documentation</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p style="font-size: 1.2rem; margin-bottom: 1rem;">
+                <strong>Built for Accountability 🔍 | Designed for Transparency 💎 | Engineered for Impact 🌍</strong>
+            </p>
+            <p>
+                <a href="https://github.com/kamrawr/project-tracking-mvp">GitHub</a> • 
+                <a href="examples/cpf-tracker/index.html">Live Demo</a> • 
+                <a href="https://github.com/kamrawr/project-tracking-mvp/blob/main/QUICKSTART.md">Documentation</a>
+            </p>
+            <p style="margin-top: 1rem; opacity: 0.8;">
+                MIT License • Open Source for Community Benefit
+            </p>
+        </div>
+    </footer>
+</body>
+</html>

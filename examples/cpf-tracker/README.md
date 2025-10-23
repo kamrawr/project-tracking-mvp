@@ -1,19 +1,19 @@
-# MPF Project Tracker
+# CPF Project Tracker
 
-**Multi-Partner Funding Program Program Management Tool**
+**Community Partner Funding Program Management Tool**
 
-A lightweight, single-page application for tracking MPF (Multi-Partner Funding Program) projects through the complete program workflow—from customer intake through project completion.
+A lightweight, single-page application for tracking CPF (Community Partner Funding) projects through the complete program workflow—from customer intake through project completion.
 
 ## 🎯 Purpose
 
-This tool implements the **MPF Program Process Design** flowchart, helping program managers track projects through each critical stage, decision point, and required form.
+This tool implements the **CPF Program Process Design** flowchart, helping program managers track projects through each critical stage, decision point, and required form.
 
 ## ✨ Features
 
 ### Process Visualization
 - **8-stage workflow** displayed at top of interface
 - Visual distinction between process steps (blue circles) and decision points (yellow diamonds)
-- Matches your exact MPF flowchart design
+- Matches your exact CPF flowchart design
 
 ### Project Management
 - **Create, edit, and track** unlimited projects
@@ -73,7 +73,7 @@ python3 -m http.server 8000
 
 ### 4. Establish Scope of Work
 - Multiple incentive worksheet completed
-- MPF Incentive List reference
+- CPF Incentive List reference
 - Identified eligible projects
 
 ### 5. Resources Check (Decision Point)
@@ -197,18 +197,18 @@ Fully responsive design works on:
 
 Potential enhancements:
 - [ ] **CSV Export** for backup/reporting
-- [ ] **Document upload** for forms (300CPF, 320MPF PDFs)
+- [ ] **Document upload** for forms (300CPF, 320CPF PDFs)
 - [ ] **Email notifications** for pending actions
 - [ ] **Kanban board view** alternative to card grid
 - [ ] **Timeline visualization** showing project duration
 - [ ] **Multi-user support** via backend integration
-- [ ] **Automated form generation** (300CPF, 320MPF pre-fill)
+- [ ] **Automated form generation** (300CPF, 320CPF pre-fill)
 - [ ] **Trade Ally directory** integration
 - [ ] **Funding calculator** for gap analysis
 
 ## 📄 License
 
-Open source - use and modify as needed for your MPF program.
+Open source - use and modify as needed for your CPF program.
 
 ## 🤝 Contributing
 
@@ -221,13 +221,13 @@ This is a single-file MVP. To contribute:
 ## 📞 Support
 
 For questions about:
-- **MPF Program Process**: Refer to your program flowchart
+- **CPF Program Process**: Refer to your program flowchart
 - **Tool Usage**: See this README
 - **Technical Issues**: Open GitHub issue
 
 ## 🙏 Acknowledgments
 
-Built to support Multi-Partner Funding Program programs delivering energy efficiency, weatherization, and home upgrade services to underserved communities.
+Built to support Community Partner Funding programs delivering energy efficiency, weatherization, and home upgrade services to underserved communities.
 
 ---
 
