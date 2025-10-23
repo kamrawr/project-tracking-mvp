@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPF Project Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #2563eb;
+            --secondary: #f59e0b;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary), #1e40af);
+            color: white;
+            padding: 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            opacity: 0.9;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .process-overview {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .process-flow {
+            display: flex;
+            gap: 1rem;
+            overflow-x: auto;
+            padding: 1rem 0;
+            margin: 1rem 0;
+        }
+
+        .process-step {
+            min-width: 200px;
+            text-align: center;
+            position: relative;
+        }
+
+        .process-step::after {
+            content: '→';
+            position: absolute;
+            right: -1.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 1.5rem;
+        }
+
+        .process-step:last-child::after {
+            display: none;
+        }
+
+        .step-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 0.5rem;
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+
+        .step-icon.decision {
+            background: var(--warning);
+            transform: rotate(45deg);
+        }
+
+        .step-icon.decision span {
+            transform: rotate(-45deg);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            border-bottom: 2px solid var(--border);
+            margin-bottom: 2rem;
+        }
+
+        .tab {
+            padding: 1rem 2rem;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-weight: 600;
+            color: var(--text-muted);
+            transition: all 0.3s;
+        }
+
+        .tab:hover {
+            color: var(--primary);
+        }
+
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .project-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .project-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border-left: 4px solid var(--primary);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .project-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .project-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1rem;
+        }
+
+        .project-id {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-intake { background: #dbeafe; color: #1e40af; }
+        .status-hea { background: #fef3c7; color: #92400e; }
+        .status-scoping { background: #fce7f3; color: #9f1239; }
+        .status-bidding { background: #e0e7ff; color: #3730a3; }
+        .status-approved { background: #d1fae5; color: #065f46; }
+        .status-implementation { background: #dbeafe; color: #1e40af; }
+        .status-completed { background: #d1fae5; color: #065f46; }
+        .status-referred { background: #f3e8ff; color: #6b21a8; }
+
+        .project-info {
+            margin: 1rem 0;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.875rem;
+        }
+
+        .info-label {
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .project-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            flex: 1;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1e40af;
+        }
+
+        .btn-secondary {
+            background: var(--border);
+            color: var(--text);
+        }
+
+        .btn-secondary:hover {
+            background: #cbd5e1;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-muted);
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text);
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-family: inherit;
+        }
+
+        .form-group textarea {
+            min-height: 100px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+        }
+
+        .checklist {
+            list-style: none;
+            margin: 1rem 0;
+        }
+
+        .checklist li {
+            padding: 0.5rem;
+            margin: 0.5rem 0;
+            background: var(--bg);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .checklist input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <h1>CPF Project Tracker</h1>
+            <p>Community Partner Funding Program Management</p>
+        </div>
+    </div>
+
+    <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 1rem 2rem; margin: 0;">
+        <div class="container">
+            <p style="margin: 0; font-size: 0.875rem; color: #92400e;">
+                <strong>⚠️ Disclaimer:</strong> This is an unofficial tool based on publicly available information about community partner funding workflows. Not affiliated with or endorsed by any official CPF program.
+            </p>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="process-overview">
+            <h2>Program Process Overview</h2>
+            <div class="process-flow">
+                <div class="process-step">
+                    <div class="step-icon">1</div>
+                    <strong>Customer Intake</strong>
+                    <small>Initial contact</small>
+                </div>
+                <div class="process-step">
+                    <div class="step-icon decision"><span>?</span></div>
+                    <strong>Qualified</strong>
+                    <small>Homeowner check</small>
+                </div>
+                <div class="process-step">
+                    <div class="step-icon">2</div>
+                    <strong>Schedule HEA</strong>
+                    <small>300CPF Form</small>
+                </div>
+                <div class="process-step">
+                    <div class="step-icon">3</div>
+                    <strong>Scope Work</strong>
+                    <small>Incentive worksheet</small>
+                </div>
+                <div class="process-step">
+                    <div class="step-icon decision"><span>$</span></div>
+                    <strong>Resources</strong>
+                    <small>Gap funding</small>
+                </div>
+                <div class="process-step">
+                    <div class="step-icon">4</div>
+                    <strong>Select Bids</strong>
+                    <small>Trade ally tool</small>
+                </div>
+                <div class="process-step">
+                    <div class="step-icon">5</div>
+                    <strong>Approve & Pay</strong>
+                    <small>320CPF Form</small>
+                </div>
+                <div class="process-step">
+                    <div class="step-icon">✓</div>
+                    <strong>Complete</strong>
+                    <small>QA & reports</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number" id="stat-total">0</div>
+                <div class="stat-label">Total Projects</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="stat-active">0</div>
+                <div class="stat-label">Active Projects</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="stat-completed">0</div>
+                <div class="stat-label">Completed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="stat-pending">0</div>
+                <div class="stat-label">Pending Action</div>
+            </div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('all')">All Projects</button>
+            <button class="tab" onclick="switchTab('intake')">Intake & HEA</button>
+            <button class="tab" onclick="switchTab('scoping')">Scoping & Bidding</button>
+            <button class="tab" onclick="switchTab('implementation')">Implementation</button>
+            <button class="tab" onclick="switchTab('completed')">Completed</button>
+        </div>
+
+        <button class="btn btn-primary" onclick="openModal('new')" style="margin-bottom: 2rem; width: auto; padding: 1rem 2rem;">
+            + New Project
+        </button>
+
+        <div id="all" class="tab-content active">
+            <div class="project-grid" id="projects-all"></div>
+        </div>
+
+        <div id="intake" class="tab-content">
+            <div class="project-grid" id="projects-intake"></div>
+        </div>
+
+        <div id="scoping" class="tab-content">
+            <div class="project-grid" id="projects-scoping"></div>
+        </div>
+
+        <div id="implementation" class="tab-content">
+            <div class="project-grid" id="projects-implementation"></div>
+        </div>
+
+        <div id="completed" class="tab-content">
+            <div class="project-grid" id="projects-completed"></div>
+        </div>
+    </div>
+
+    <!-- Modal for New/Edit Project -->
+    <div class="modal" id="projectModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">New Project</h2>
+                <button class="modal-close" onclick="closeModal()">×</button>
+            </div>
+            <form id="projectForm">
+                <div class="form-group">
+                    <label>Customer Name *</label>
+                    <input type="text" id="customerName" required>
+                </div>
+                <div class="form-group">
+                    <label>Address *</label>
+                    <input type="text" id="address" required>
+                </div>
+                <div class="form-group">
+                    <label>Contact</label>
+                    <input type="text" id="contact">
+                </div>
+                <div class="form-group">
+                    <label>Status *</label>
+                    <select id="status" required>
+                        <option value="intake">Customer Intake</option>
+                        <option value="hea">HEA Scheduled</option>
+                        <option value="scoping">Scoping Work</option>
+                        <option value="bidding">Soliciting Bids</option>
+                        <option value="approved">Approved - In Progress</option>
+                        <option value="implementation">Implementation</option>
+                        <option value="completed">Completed</option>
+                        <option value="referred">Referred to Partner</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Qualified Homeowner</label>
+                    <select id="qualified">
+                        <option value="pending">Pending Verification</option>
+                        <option value="yes">Yes</option>
+                        <option value="no">No - Refer to CBO</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Incentive Forms</label>
+                    <textarea id="forms" placeholder="300CPF, 320CPF status..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Funding Sources</label>
+                    <textarea id="funding" placeholder="Internal CPF, Energy Trust, External partners..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea id="notes"></textarea>
+                </div>
+                <div class="project-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Project</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Sample data structure matching the CPF process
+        let projects = [
+            {
+                id: 'CPF-001',
+                customerName: 'Sample Customer',
+                address: '123 Main St, Portland OR',
+                contact: '(503) 555-0123',
+                status: 'hea',
+                qualified: 'yes',
+                forms: '300CPF submitted',
+                funding: 'Energy Trust Program',
+                notes: 'Initial assessment scheduled for next week',
+                createdDate: '2025-10-15',
+                updatedDate: '2025-10-20'
+            }
+        ];
+
+        // Load from localStorage
+        function loadProjects() {
+            const saved = localStorage.getItem('cpfProjects');
+            if (saved) {
+                projects = JSON.parse(saved);
+            }
+            renderProjects();
+            updateStats();
+        }
+
+        // Save to localStorage
+        function saveProjects() {
+            localStorage.setItem('cpfProjects', JSON.stringify(projects));
+        }
+
+        // Render projects
+        function renderProjects() {
+            const containers = {
+                all: document.getElementById('projects-all'),
+                intake: document.getElementById('projects-intake'),
+                scoping: document.getElementById('projects-scoping'),
+                implementation: document.getElementById('projects-implementation'),
+                completed: document.getElementById('projects-completed')
+            };
+
+            Object.values(containers).forEach(c => c.innerHTML = '');
+
+            projects.forEach(project => {
+                const card = createProjectCard(project);
+                containers.all.appendChild(card.cloneNode(true));
+
+                if (['intake', 'hea'].includes(project.status)) {
+                    containers.intake.appendChild(card.cloneNode(true));
+                } else if (['scoping', 'bidding'].includes(project.status)) {
+                    containers.scoping.appendChild(card.cloneNode(true));
+                } else if (['approved', 'implementation'].includes(project.status)) {
+                    containers.implementation.appendChild(card.cloneNode(true));
+                } else if (['completed', 'referred'].includes(project.status)) {
+                    containers.completed.appendChild(card.cloneNode(true));
+                }
+            });
+        }
+
+        function createProjectCard(project) {
+            const card = document.createElement('div');
+            card.className = 'project-card';
+            
+            const statusLabels = {
+                intake: 'Customer Intake',
+                hea: 'HEA Scheduled',
+                scoping: 'Scoping Work',
+                bidding: 'Soliciting Bids',
+                approved: 'Approved',
+                implementation: 'In Progress',
+                completed: 'Completed',
+                referred: 'Referred to Partner'
+            };
+
+            card.innerHTML = `
+                <div class="project-header">
+                    <div class="project-id">${project.id}</div>
+                    <span class="status-badge status-${project.status}">${statusLabels[project.status]}</span>
+                </div>
+                <h3>${project.customerName}</h3>
+                <div class="project-info">
+                    <div class="info-row">
+                        <span class="info-label">Address</span>
+                        <span>${project.address}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Qualified</span>
+                        <span>${project.qualified === 'yes' ? '✓ Yes' : project.qualified === 'no' ? '✗ No' : '⏳ Pending'}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Updated</span>
+                        <span>${new Date(project.updatedDate).toLocaleDateString()}</span>
+                    </div>
+                </div>
+                <div class="project-actions">
+                    <button class="btn btn-secondary" onclick="viewProject('${project.id}')">View</button>
+                    <button class="btn btn-primary" onclick="editProject('${project.id}')">Edit</button>
+                </div>
+            `;
+
+            return card;
+        }
+
+        function updateStats() {
+            document.getElementById('stat-total').textContent = projects.length;
+            document.getElementById('stat-active').textContent = projects.filter(p => 
+                !['completed', 'referred'].includes(p.status)
+            ).length;
+            document.getElementById('stat-completed').textContent = projects.filter(p => 
+                p.status === 'completed'
+            ).length;
+            document.getElementById('stat-pending').textContent = projects.filter(p => 
+                ['intake', 'bidding', 'approved'].includes(p.status)
+            ).length;
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tab).classList.add('active');
+        }
+
+        function openModal(mode, projectId = null) {
+            const modal = document.getElementById('projectModal');
+            const title = document.getElementById('modalTitle');
+            const form = document.getElementById('projectForm');
+
+            if (mode === 'new') {
+                title.textContent = 'New Project';
+                form.reset();
+            } else if (mode === 'edit' && projectId) {
+                title.textContent = 'Edit Project';
+                const project = projects.find(p => p.id === projectId);
+                if (project) {
+                    document.getElementById('customerName').value = project.customerName;
+                    document.getElementById('address').value = project.address;
+                    document.getElementById('contact').value = project.contact || '';
+                    document.getElementById('status').value = project.status;
+                    document.getElementById('qualified').value = project.qualified;
+                    document.getElementById('forms').value = project.forms || '';
+                    document.getElementById('funding').value = project.funding || '';
+                    document.getElementById('notes').value = project.notes || '';
+                    form.dataset.editId = projectId;
+                }
+            }
+
+            modal.classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('projectModal').classList.remove('active');
+            document.getElementById('projectForm').reset();
+            delete document.getElementById('projectForm').dataset.editId;
+        }
+
+        function editProject(id) {
+            openModal('edit', id);
+        }
+
+        function viewProject(id) {
+            const project = projects.find(p => p.id === id);
+            if (project) {
+                alert(`Project Details:\n\nID: ${project.id}\nCustomer: ${project.customerName}\nAddress: ${project.address}\nStatus: ${project.status}\n\nForms: ${project.forms}\nFunding: ${project.funding}\n\nNotes: ${project.notes}`);
+            }
+        }
+
+        // Form submission
+        document.getElementById('projectForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const formData = {
+                customerName: document.getElementById('customerName').value,
+                address: document.getElementById('address').value,
+                contact: document.getElementById('contact').value,
+                status: document.getElementById('status').value,
+                qualified: document.getElementById('qualified').value,
+                forms: document.getElementById('forms').value,
+                funding: document.getElementById('funding').value,
+                notes: document.getElementById('notes').value,
+                updatedDate: new Date().toISOString().split('T')[0]
+            };
+
+            const editId = this.dataset.editId;
+
+            if (editId) {
+                const project = projects.find(p => p.id === editId);
+                if (project) {
+                    Object.assign(project, formData);
+                }
+            } else {
+                formData.id = 'CPF-' + String(projects.length + 1).padStart(3, '0');
+                formData.createdDate = formData.updatedDate;
+                projects.push(formData);
+            }
+
+            saveProjects();
+            renderProjects();
+            updateStats();
+            closeModal();
+        });
+
+        // Initialize
+        loadProjects();
+    </script>
+</body>
+</html>
