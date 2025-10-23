@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPF Project Tracker - Accessible Edition</title>
+    
+    <!-- Core Modules -->
+    <script src="../../core/ledger.js"></script>
+    <script src="../../core/rbac.js"></script>
+    <script src="../../core/approval-engine.js"></script>
+    <script src="../../core/funding-tracker.js"></script>
+    <script src="../../core/qa-gates.js"></script>
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --primary: #2563eb;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg: #f8fafc;
+            --text: #1e293b;
+            --border: #e2e8f0;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, var(--primary), #1e40af);
+            color: white;
+            padding: 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        /* Clickable Workflow Navigator */
+        .workflow-nav {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .workflow-stages {
+            display: flex;
+            gap: 0.5rem;
+            overflow-x: auto;
+            padding: 0.5rem 0;
+        }
+        
+        .stage-chip {
+            padding: 0.75rem 1.5rem;
+            border-radius: 24px;
+            border: 2px solid var(--border);
+            background: white;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .stage-chip:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+        }
+        
+        .stage-chip.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        
+        .stage-count {
+            background: rgba(0,0,0,0.1);
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        
+        .stage-chip.active .stage-count {
+            background: rgba(255,255,255,0.3);
+        }
+        
+        /* Quick Actions Bar */
+        .quick-actions {
+            background: white;
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-secondary { background: var(--border); color: var(--text); }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        
+        /* Selection Checkbox */
+        .select-all-container {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            border-right: 1px solid var(--border);
+            margin-right: 0.5rem;
+        }
+        
+        .checkbox-custom {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        
+        /* Project Grid */
+        .project-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .project-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border-left: 4px solid var(--primary);
+            transition: all 0.2s;
+            position: relative;
+        }
+        
+        .project-card.selected {
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+            border-left-width: 6px;
+        }
+        
+        .project-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .card-checkbox {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+        }
+        
+        .card-content {
+            margin-left: 2.5rem;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .status-intake { background: #dbeafe; color: #1e40af; }
+        .status-hea { background: #fef3c7; color: #92400e; }
+        .status-scoping { background: #fce7f3; color: #9f1239; }
+        .status-bidding { background: #e0e7ff; color: #3730a3; }
+        .status-approved { background: #d1fae5; color: #065f46; }
+        .status-implementation { background: #dbeafe; color: #1e40af; }
+        .status-completed { background: #d1fae5; color: #065f46; }
+        
+        /* Toggle Switch */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .3s;
+            border-radius: 24px;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .toggle-slider {
+            background-color: var(--success);
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+        
+        /* Quick Action Buttons on Cards */
+        .card-quick-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .quick-btn {
+            padding: 0.5rem 1rem;
+            border: 2px solid var(--border);
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        
+        .quick-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.875rem;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.active { display: flex; }
+        
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .form-group select, .form-group input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <h1>CPF Project Tracker</h1>
+            <p>Selection-Based Accessible Interface</p>
+        </div>
+    </div>
+    
+    <div class="container">
+        <!-- Clickable Workflow Navigator -->
+        <div class="workflow-nav">
+            <h3 style="margin-bottom: 1rem;">📍 Filter by Stage</h3>
+            <div class="workflow-stages" id="workflowStages"></div>
+        </div>
+        
+        <!-- Quick Actions Bar -->
+        <div class="quick-actions">
+            <div class="select-all-container">
+                <input type="checkbox" id="selectAll" class="checkbox-custom" onchange="toggleSelectAll()">
+                <label for="selectAll" style="cursor: pointer;">Select All</label>
+            </div>
+            
+            <button class="btn btn-primary" onclick="openNewProjectModal()">
+                ➕ New Project
+            </button>
+            
+            <button class="btn btn-success" id="bulkApproveBtn" onclick="bulkApprove()" disabled>
+                ✅ Bulk Approve
+            </button>
+            
+            <button class="btn btn-secondary" id="bulkExportBtn" onclick="bulkExport()" disabled>
+                📥 Export Selected
+            </button>
+            
+            <div style="margin-left: auto; font-size: 0.875rem; color: #666;">
+                <span id="selectedCount">0</span> selected
+            </div>
+        </div>
+        
+        <!-- Project Grid -->
+        <div class="project-grid" id="projectGrid"></div>
+    </div>
+    
+    <!-- New Project Modal -->
+    <div class="modal" id="projectModal">
+        <div class="modal-content">
+            <h2 id="modalTitle">New Project</h2>
+            <form id="projectForm">
+                <div class="form-group">
+                    <label>Project Type *</label>
+                    <select id="projectType" required>
+                        <option value="">Select type...</option>
+                        <option value="weatherization">Weatherization</option>
+                        <option value="heat-pump">Heat Pump Installation</option>
+                        <option value="solar">Solar Installation</option>
+                        <option value="insulation">Insulation Upgrade</option>
+                        <option value="hvac">HVAC Replacement</option>
+                        <option value="windows">Window Replacement</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Customer Scenario *</label>
+                    <select id="customerScenario" required>
+                        <option value="">Select scenario...</option>
+                        <option value="low-income-homeowner">Low-Income Homeowner</option>
+                        <option value="moderate-income-homeowner">Moderate-Income Homeowner</option>
+                        <option value="renter-with-permission">Renter (with landlord permission)</option>
+                        <option value="landlord-owner">Landlord/Property Owner</option>
+                        <option value="manufactured-home">Manufactured Home Owner</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Address *</label>
+                    <input type="text" id="address" placeholder="123 Main St, Portland OR" required>
+                </div>
+                
+                <div class="form-group">
+                    <label>Income Qualification Status</label>
+                    <select id="qualified">
+                        <option value="pending">⏳ Pending Verification</option>
+                        <option value="yes">✅ Qualified</option>
+                        <option value="no">❌ Not Qualified - Refer</option>
+                    </select>
+                </div>
+                
+                <div style="display: flex; gap: 1rem;">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Project</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        // Initialize core modules
+        const ledger = new Ledger({ storageKey: 'cpf_ledger_v2' });
+        const rbac = new RBAC();
+        const approvals = new ApprovalEngine();
+        const funding = new FundingTracker();
+        const qaGates = new QAGates();
+        
+        const currentUser = { id: 'pm_john', name: 'John PM', role: 'pm' };
+        
+        let projects = JSON.parse(localStorage.getItem('cpf_projects_v2') || '[]');
+        let selectedProjects = new Set();
+        let currentStageFilter = 'all';
+        
+        const stages = [
+            { id: 'all', label: 'All Projects', icon: '📋' },
+            { id: 'intake', label: 'Intake', icon: '📝' },
+            { id: 'hea', label: 'HEA', icon: '🏠' },
+            { id: 'scoping', label: 'Scoping', icon: '📐' },
+            { id: 'bidding', label: 'Bidding', icon: '💰' },
+            { id: 'approved', label: 'Approved', icon: '✅' },
+            { id: 'implementation', label: 'Implementation', icon: '🔨' },
+            { id: 'completed', label: 'Completed', icon: '🎉' }
+        ];
+        
+        // Initialize
+        function init() {
+            if (projects.length === 0) {
+                createSampleProjects();
+            }
+            renderWorkflowNav();
+            renderProjects();
+        }
+        
+        function createSampleProjects() {
+            const samples = [
+                {
+                    id: 'CPF-001',
+                    type: 'weatherization',
+                    scenario: 'low-income-homeowner',
+                    address: '123 Main St, Portland OR',
+                    status: 'hea',
+                    qualified: 'yes',
+                    form300: true,
+                    form320: false,
+                    createdDate: new Date().toISOString()
+                },
+                {
+                    id: 'CPF-002',
+                    type: 'heat-pump',
+                    scenario: 'moderate-income-homeowner',
+                    address: '456 Oak Ave, Portland OR',
+                    status: 'scoping',
+                    qualified: 'yes',
+                    form300: true,
+                    form320: false,
+                    createdDate: new Date().toISOString()
+                }
+            ];
+            projects = samples;
+            saveProjects();
+            
+            // Initialize sample data for modules
+            samples.forEach(p => {
+                qaGates.create({ projectId: p.id, stage: p.status, inspector: currentUser.id });
+                funding.addCommitment({ projectId: p.id, source: 'Energy Trust', amount: 5000, purpose: 'Initial funding' });
+                approvals.requestApproval({
+                    projectId: p.id,
+                    milestone: '300CPF',
+                    requiredApprovers: ['pm_john', 'finance_sarah']
+                });
+            });
+        }
+        
+        function renderWorkflowNav() {
+            const container = document.getElementById('workflowStages');
+            container.innerHTML = stages.map(stage => {
+                const count = stage.id === 'all' ? projects.length : projects.filter(p => p.status === stage.id).length;
+                return `
+                    <div class="stage-chip ${currentStageFilter === stage.id ? 'active' : ''}" 
+                         onclick="filterByStage('${stage.id}')">
+                        ${stage.icon} ${stage.label}
+                        <span class="stage-count">${count}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function filterByStage(stageId) {
+            currentStageFilter = stageId;
+            renderWorkflowNav();
+            renderProjects();
+        }
+        
+        function renderProjects() {
+            const filtered = currentStageFilter === 'all' 
+                ? projects 
+                : projects.filter(p => p.status === currentStageFilter);
+            
+            const grid = document.getElementById('projectGrid');
+            
+            if (filtered.length === 0) {
+                grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 3rem; color: #666;">No projects in this stage</div>';
+                return;
+            }
+            
+            grid.innerHTML = filtered.map(project => `
+                <div class="project-card ${selectedProjects.has(project.id) ? 'selected' : ''}" data-id="${project.id}">
+                    <input type="checkbox" class="card-checkbox" 
+                           ${selectedProjects.has(project.id) ? 'checked' : ''}
+                           onchange="toggleProjectSelection('${project.id}')">
+                    
+                    <div class="card-content">
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                            <div>
+                                <div style="font-size: 0.875rem; color: #666; font-weight: 600;">${project.id}</div>
+                                <h3 style="margin: 0.5rem 0;">${formatScenario(project.scenario)}</h3>
+                            </div>
+                            <span class="status-badge status-${project.status}">${formatStatus(project.status)}</span>
+                        </div>
+                        
+                        <div class="info-row">
+                            <span style="color: #666;">📍 Address</span>
+                            <span>${project.address}</span>
+                        </div>
+                        <div class="info-row">
+                            <span style="color: #666;">🔧 Type</span>
+                            <span>${formatType(project.type)}</span>
+                        </div>
+                        <div class="info-row">
+                            <span style="color: #666;">✅ Qualified</span>
+                            <span>${project.qualified === 'yes' ? '✅ Yes' : project.qualified === 'no' ? '❌ No' : '⏳ Pending'}</span>
+                        </div>
+                        <div class="info-row" style="border: none;">
+                            <span style="color: #666;">📋 Forms</span>
+                            <span>
+                                <label class="toggle-switch" title="300CPF Form">
+                                    <input type="checkbox" ${project.form300 ? 'checked' : ''} 
+                                           onchange="toggleForm('${project.id}', '300')">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                                <small style="margin: 0 0.5rem;">300CPF</small>
+                                
+                                <label class="toggle-switch" title="320CPF Form">
+                                    <input type="checkbox" ${project.form320 ? 'checked' : ''}
+                                           onchange="toggleForm('${project.id}', '320')">
+                                    <span class="toggle-slider"></span>
+                                </label>
+                                <small>320CPF</small>
+                            </span>
+                        </div>
+                        
+                        <div class="card-quick-actions">
+                            ${getQuickActions(project)}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            updateBulkButtons();
+        }
+        
+        function getQuickActions(project) {
+            const actions = {
+                'intake': [
+                    { label: '→ Move to HEA', status: 'hea' },
+                    { label: '❌ Refer Out', status: 'referred' }
+                ],
+                'hea': [
+                    { label: '→ Start Scoping', status: 'scoping' }
+                ],
+                'scoping': [
+                    { label: '→ Request Bids', status: 'bidding' }
+                ],
+                'bidding': [
+                    { label: '✅ Approve', status: 'approved' }
+                ],
+                'approved': [
+                    { label: '🔨 Start Work', status: 'implementation' }
+                ],
+                'implementation': [
+                    { label: '🎉 Mark Complete', status: 'completed' }
+                ]
+            };
+            
+            const stageActions = actions[project.status] || [];
+            
+            return stageActions.map(action => 
+                `<button class="quick-btn" onclick="quickStatusChange('${project.id}', '${action.status}')">${action.label}</button>`
+            ).join('') + `<button class="quick-btn" onclick="viewDetails('${project.id}')">👁️ View</button>`;
+        }
+        
+        function quickStatusChange(projectId, newStatus) {
+            const project = projects.find(p => p.id === projectId);
+            if (!project) return;
+            
+            const oldStatus = project.status;
+            project.status = newStatus;
+            
+            // Log to ledger
+            ledger.record({
+                action: 'STATUS_CHANGE',
+                projectId,
+                userId: currentUser.id,
+                details: { from: oldStatus, to: newStatus }
+            });
+            
+            // Create QA checkpoint for new stage
+            qaGates.create({
+                projectId,
+                stage: newStatus,
+                inspector: currentUser.id
+            });
+            
+            saveProjects();
+            renderWorkflowNav();
+            renderProjects();
+        }
+        
+        function toggleForm(projectId, formNumber) {
+            const project = projects.find(p => p.id === projectId);
+            if (!project) return;
+            
+            const formField = `form${formNumber}`;
+            project[formField] = !project[formField];
+            
+            ledger.record({
+                action: 'FORM_STATUS_CHANGE',
+                projectId,
+                userId: currentUser.id,
+                details: { form: formNumber, status: project[formField] }
+            });
+            
+            if (project[formField]) {
+                approvals.requestApproval({
+                    projectId,
+                    milestone: `${formNumber}CPF`,
+                    requiredApprovers: ['pm_john', 'finance_sarah']
+                });
+            }
+            
+            saveProjects();
+        }
+        
+        function toggleProjectSelection(projectId) {
+            if (selectedProjects.has(projectId)) {
+                selectedProjects.delete(projectId);
+            } else {
+                selectedProjects.add(projectId);
+            }
+            renderProjects();
+        }
+        
+        function toggleSelectAll() {
+            const filtered = currentStageFilter === 'all' 
+                ? projects 
+                : projects.filter(p => p.status === currentStageFilter);
+            
+            if (selectedProjects.size === filtered.length) {
+                selectedProjects.clear();
+            } else {
+                filtered.forEach(p => selectedProjects.add(p.id));
+            }
+            renderProjects();
+        }
+        
+        function updateBulkButtons() {
+            const count = selectedProjects.size;
+            document.getElementById('selectedCount').textContent = count;
+            document.getElementById('bulkApproveBtn').disabled = count === 0;
+            document.getElementById('bulkExportBtn').disabled = count === 0;
+            document.getElementById('selectAll').checked = count > 0 && count === projects.filter(p => currentStageFilter === 'all' || p.status === currentStageFilter).length;
+        }
+        
+        function bulkApprove() {
+            selectedProjects.forEach(projectId => {
+                quickStatusChange(projectId, 'approved');
+            });
+            selectedProjects.clear();
+        }
+        
+        function bulkExport() {
+            const selected = projects.filter(p => selectedProjects.has(p.id));
+            const csv = [
+                ['ID', 'Type', 'Scenario', 'Address', 'Status', 'Qualified', '300CPF', '320CPF'],
+                ...selected.map(p => [p.id, p.type, p.scenario, p.address, p.status, p.qualified, p.form300, p.form320])
+            ].map(row => row.join(',')).join('\n');
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `cpf-projects-${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+        }
+        
+        function viewDetails(projectId) {
+            const project = projects.find(p => p.id === projectId);
+            const history = ledger.getHistory(projectId);
+            const projectApprovals = approvals.approvals.filter(a => a.projectId === projectId);
+            const fundingGap = funding.getGap(projectId);
+            const qa = qaGates.checkpoints.filter(c => c.projectId === projectId);
+            
+            let details = `🔐 ${project.id}\n\n`;
+            details += `Type: ${formatType(project.type)}\n`;
+            details += `Scenario: ${formatScenario(project.scenario)}\n`;
+            details += `Status: ${formatStatus(project.status)}\n\n`;
+            details += `💰 Funding: $${fundingGap.committed.toLocaleString()} committed\n`;
+            details += `✅ Approvals: ${projectApprovals.length}\n`;
+            details += `🎯 QA Checkpoints: ${qa.length}\n`;
+            details += `📋 Audit Entries: ${history.length}\n`;
+            
+            alert(details);
+        }
+        
+        function openNewProjectModal() {
+            document.getElementById('projectModal').classList.add('active');
+        }
+        
+        function closeModal() {
+            document.getElementById('projectModal').classList.remove('active');
+            document.getElementById('projectForm').reset();
+        }
+        
+        document.getElementById('projectForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const newProject = {
+                id: 'CPF-' + String(projects.length + 1).padStart(3, '0'),
+                type: document.getElementById('projectType').value,
+                scenario: document.getElementById('customerScenario').value,
+                address: document.getElementById('address').value,
+                status: 'intake',
+                qualified: document.getElementById('qualified').value,
+                form300: false,
+                form320: false,
+                createdDate: new Date().toISOString()
+            };
+            
+            projects.push(newProject);
+            
+            ledger.record({
+                action: 'PROJECT_CREATED',
+                projectId: newProject.id,
+                userId: currentUser.id,
+                details: { type: newProject.type, scenario: newProject.scenario }
+            });
+            
+            qaGates.create({ projectId: newProject.id, stage: 'intake', inspector: currentUser.id });
+            
+            saveProjects();
+            renderWorkflowNav();
+            renderProjects();
+            closeModal();
+        });
+        
+        function saveProjects() {
+            localStorage.setItem('cpf_projects_v2', JSON.stringify(projects));
+        }
+        
+        function formatType(type) {
+            return type.split('-').map(w => w[0].toUpperCase() + w.slice(1)).join(' ');
+        }
+        
+        function formatScenario(scenario) {
+            return scenario.split('-').map(w => w[0].toUpperCase() + w.slice(1)).join(' ');
+        }
+        
+        function formatStatus(status) {
+            return status.split('-').map(w => w[0].toUpperCase() + w.slice(1)).join(' ');
+        }
+        
+        init();
+    </script>
+</body>
+</html>
