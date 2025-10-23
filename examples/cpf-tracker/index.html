@@ -3,7 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CPF Project Tracker</title>
+    <title>CPF Project Tracker - Integrated Demo</title>
+    
+    <!-- Core Modules -->
+    <script src="../../core/ledger.js"></script>
+    <script src="../../core/rbac.js"></script>
+    <script src="../../core/approval-engine.js"></script>
+    <script src="../../core/funding-tracker.js"></script>
+    <script src="../../core/qa-gates.js"></script>
     <style>
         * {
             margin: 0;
@@ -446,6 +453,43 @@
                 <div class="stat-label">Pending Action</div>
             </div>
         </div>
+        
+        <!-- Integration Status -->
+        <div class="process-overview" style="margin-bottom: 2rem;">
+            <h3 style="margin-bottom: 1rem;">🔌 Core Module Integration Status</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                <div style="padding: 1rem; background: #d1fae5; border-radius: 8px; border-left: 3px solid #10b981;">
+                    <strong>✅ Audit Ledger</strong>
+                    <div style="font-size: 0.875rem; color: #065f46; margin-top: 0.5rem;">
+                        <span id="ledger-count">0</span> entries tracked
+                    </div>
+                </div>
+                <div style="padding: 1rem; background: #dbeafe; border-radius: 8px; border-left: 3px solid #2563eb;">
+                    <strong>✅ Approvals</strong>
+                    <div style="font-size: 0.875rem; color: #1e40af; margin-top: 0.5rem;">
+                        <span id="approval-count">0</span> workflows active
+                    </div>
+                </div>
+                <div style="padding: 1rem; background: #fef3c7; border-radius: 8px; border-left: 3px solid #f59e0b;">
+                    <strong>✅ Funding Tracker</strong>
+                    <div style="font-size: 0.875rem; color: #92400e; margin-top: 0.5rem;">
+                        $<span id="funding-total">0</span> committed
+                    </div>
+                </div>
+                <div style="padding: 1rem; background: #e0e7ff; border-radius: 8px; border-left: 3px solid #4f46e5;">
+                    <strong>✅ QA Gates</strong>
+                    <div style="font-size: 0.875rem; color: #3730a3; margin-top: 0.5rem;">
+                        <span id="qa-count">0</span> checkpoints
+                    </div>
+                </div>
+                <div style="padding: 1rem; background: #f3e8ff; border-radius: 8px; border-left: 3px solid #7c3aed;">
+                    <strong>✅ RBAC</strong>
+                    <div style="font-size: 0.875rem; color: #5b21b6; margin-top: 0.5rem;">
+                        Role-based access ready
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <div class="tabs">
             <button class="tab active" onclick="switchTab('all')">All Projects</button>
@@ -542,6 +586,16 @@
     </div>
 
     <script>
+        // Initialize core modules
+        const ledger = new Ledger({ storageKey: 'cpf_ledger' });
+        const rbac = new RBAC();
+        const approvals = new ApprovalEngine();
+        const funding = new FundingTracker();
+        const qaGates = new QAGates();
+        
+        // Current user (in production, this would come from auth)
+        const currentUser = { id: 'pm_john', name: 'John PM', role: 'pm' };
+        
         // Sample data structure matching the CPF process
         let projects = [
             {
@@ -558,6 +612,47 @@
                 updatedDate: '2025-10-20'
             }
         ];
+        
+        // Initialize sample data for demo
+        function initializeSampleData() {
+            const projectId = 'CPF-001';
+            
+            // Create QA checkpoint
+            if (!qaGates.checkpoints.some(c => c.projectId === projectId)) {
+                qaGates.create({ projectId, stage: 'hea', inspector: 'qa_inspector' });
+            }
+            
+            // Add funding commitment
+            if (!funding.commitments.some(c => c.projectId === projectId)) {
+                funding.addCommitment({ 
+                    projectId, 
+                    source: 'Energy Trust', 
+                    amount: 5000, 
+                    purpose: 'Home energy assessment' 
+                });
+            }
+            
+            // Create approval request for 300CPF form
+            if (!approvals.approvals.some(a => a.projectId === projectId && a.milestone === '300CPF')) {
+                approvals.requestApproval({
+                    projectId,
+                    milestone: '300CPF',
+                    form: 'Home Energy Assessment Authorization',
+                    requiredApprovers: ['pm_john', 'finance_sarah'],
+                    details: 'Authorization for HEA scheduling'
+                });
+            }
+            
+            // Record initial ledger entry
+            if (ledger.entries.length === 0) {
+                ledger.record({
+                    action: 'PROJECT_CREATED',
+                    projectId,
+                    userId: currentUser.id,
+                    details: { customerName: 'Sample Customer', status: 'intake' }
+                });
+            }
+        }
 
         // Load from localStorage
         function loadProjects() {
@@ -657,6 +752,14 @@
             document.getElementById('stat-pending').textContent = projects.filter(p => 
                 ['intake', 'bidding', 'approved'].includes(p.status)
             ).length;
+            
+            // Update integration status metrics
+            document.getElementById('ledger-count').textContent = ledger.entries.length;
+            document.getElementById('approval-count').textContent = approvals.approvals.length;
+            document.getElementById('qa-count').textContent = qaGates.checkpoints.length;
+            
+            const totalFunding = funding.commitments.reduce((sum, c) => sum + c.amount, 0);
+            document.getElementById('funding-total').textContent = totalFunding.toLocaleString();
         }
 
         function switchTab(tab) {
@@ -706,9 +809,43 @@
 
         function viewProject(id) {
             const project = projects.find(p => p.id === id);
-            if (project) {
-                alert(`Project Details:\n\nID: ${project.id}\nCustomer: ${project.customerName}\nAddress: ${project.address}\nStatus: ${project.status}\n\nForms: ${project.forms}\nFunding: ${project.funding}\n\nNotes: ${project.notes}`);
-            }
+            if (!project) return;
+            
+            // Get integrated data from all modules
+            const projectLedger = ledger.getHistory(id);
+            const projectApprovals = approvals.approvals.filter(a => a.projectId === id);
+            const fundingGap = funding.getGap(id);
+            const projectQA = qaGates.checkpoints.filter(c => c.projectId === id);
+            
+            // Build detailed view
+            let details = `🔐 PROJECT DETAILS\n\n`;
+            details += `ID: ${project.id}\n`;
+            details += `Customer: ${project.customerName}\n`;
+            details += `Address: ${project.address}\n`;
+            details += `Status: ${project.status}\n\n`;
+            
+            details += `💰 FUNDING ANALYSIS\n`;
+            details += `Committed: $${fundingGap.committed.toLocaleString()}\n`;
+            details += `Disbursed: $${fundingGap.disbursed.toLocaleString()}\n`;
+            details += `Remaining: $${fundingGap.remaining.toLocaleString()}\n\n`;
+            
+            details += `✅ APPROVALS (${projectApprovals.length})\n`;
+            projectApprovals.forEach(a => {
+                details += `- ${a.milestone}: ${a.status}\n`;
+            });
+            
+            details += `\n🎯 QA CHECKPOINTS (${projectQA.length})\n`;
+            projectQA.forEach(q => {
+                details += `- ${q.stage}: ${q.status}\n`;
+            });
+            
+            details += `\n📋 AUDIT TRAIL (${projectLedger.length} entries)\n`;
+            projectLedger.slice(-5).forEach(entry => {
+                const date = new Date(entry.timestamp).toLocaleString();
+                details += `- ${entry.action} by ${entry.userId} on ${date}\n`;
+            });
+            
+            alert(details);
         }
 
         // Form submission
@@ -731,13 +868,37 @@
 
             if (editId) {
                 const project = projects.find(p => p.id === editId);
-                if (project) {
-                    Object.assign(project, formData);
+                const oldStatus = project.status;
+                Object.assign(project, formData);
+                
+                // Log status change to ledger
+                if (oldStatus !== formData.status) {
+                    ledger.record({
+                        action: 'STATUS_CHANGE',
+                        projectId: editId,
+                        userId: currentUser.id,
+                        details: { from: oldStatus, to: formData.status }
+                    });
                 }
             } else {
                 formData.id = 'CPF-' + String(projects.length + 1).padStart(3, '0');
                 formData.createdDate = formData.updatedDate;
                 projects.push(formData);
+                
+                // Log project creation
+                ledger.record({
+                    action: 'PROJECT_CREATED',
+                    projectId: formData.id,
+                    userId: currentUser.id,
+                    details: { customerName: formData.customerName, status: formData.status }
+                });
+                
+                // Create initial QA checkpoint
+                qaGates.create({
+                    projectId: formData.id,
+                    stage: formData.status,
+                    inspector: currentUser.id
+                });
             }
 
             saveProjects();
@@ -747,6 +908,7 @@
         });
 
         // Initialize
+        initializeSampleData();
         loadProjects();
     </script>
 </body>
